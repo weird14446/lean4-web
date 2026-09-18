@@ -67,17 +67,21 @@ def serveFile (filePath : System.FilePath) : Async (Response Body.Full) := do
   catch _ =>
     errorResponse s!"File not readable: {filePath}" .internalServerError
 
-def fallbackHtml : String :=
-  "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Lean 4 Web</title></head>" ++
-  "<body style=\"font-family:sans-serif;background:#0d1117;color:#f0f6fc;padding:3rem;text-align:center;\">" ++
-  "<h1>Lean 4 HTTP Web Server (Std.Http)</h1>" ++
-  "<p>프론트엔드 정적 파일(dist)을 찾을 수 없습니다.</p>" ++
-  "<p><code>npm run build</code>를 실행하여 빌드하거나, 프론트엔드 개발 서버(<code>npm run dev</code>)를 사용해주세요.</p>" ++
+def fallbackHtml (fPort : UInt16) : String :=
+  "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Lean 4 Web</title>" ++
+  "<meta http-equiv=\"refresh\" content=\"1; url=http://localhost:" ++ toString fPort ++ "/\">" ++
+  "</head>" ++
+  "<body style=\"font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0d1117;color:#f0f6fc;padding:3rem;text-align:center;\">" ++
+  "<h1 style=\"margin-bottom:1rem;\">Lean 4 HTTP Web Server (Std.Http)</h1>" ++
+  "<p style=\"color:#3fb950;font-size:1.1rem;margin-bottom:1.5rem;\">백엔드 서버가 정상 작동 중입니다 (Port 80/8080).</p>" ++
+  "<p style=\"color:#8b949e;margin-bottom:1rem;\">프론트엔드 개발 서버(포트 " ++ toString fPort ++ ")로 자동 이동합니다...</p>" ++
+  "<p><a href=\"http://localhost:" ++ toString fPort ++ "\" style=\"display:inline-block;padding:0.75rem 1.5rem;background:#8957e5;color:white;text-decoration:none;border-radius:8px;font-weight:600;\">홈페이지로 바로 이동하기</a></p>" ++
   "</body></html>"
 
 structure AppHandler where
   todoStore : TodoStore
   distDir : Option System.FilePath
+  frontendPort : UInt16
 
 instance : Handler AppHandler where
   onRequest handler req := do
@@ -102,9 +106,9 @@ instance : Handler AppHandler where
           if ← indexHtml.pathExists then
             return ← serveFile indexHtml
           else
-            return ← Response.ok |> cors |>.html fallbackHtml
+            return ← Response.ok |> cors |>.html (fallbackHtml handler.frontendPort)
       | none =>
-        return ← Response.ok |> cors |>.html fallbackHtml
+        return ← Response.ok |> cors |>.html (fallbackHtml handler.frontendPort)
 
     match method, path with
     | .get, "/api/health" =>
@@ -304,11 +308,24 @@ def parsePort (args : List String) : IO UInt16 := do
   -- 4) 기본값
   return 8080
 
+def parseFrontendPort : IO UInt16 := do
+  if let some envPort ← IO.getEnv "FRONTEND_PORT" then
+    if let some p := envPort.toNat? then
+      if p > 0 ∧ p < 65536 then
+        return p.toUInt16
+  let dotEnv ← readEnvFile
+  if let some pStr := dotEnv.lookup "FRONTEND_PORT" then
+    if let some p := pStr.toNat? then
+      if p > 0 ∧ p < 65536 then
+        return p.toUInt16
+  return 5173
+
 def main (args : List String) : IO UInt32 := do
   let port ← parsePort args
+  let fPort ← parseFrontendPort
   let store ← TodoStore.create
   let distDir ← findDistDir
-  let handler : AppHandler := { todoStore := store, distDir := distDir }
+  let handler : AppHandler := { todoStore := store, distDir := distDir, frontendPort := fPort }
 
   IO.println s!"====================================================="
   IO.println s!"  Lean 4 HTTP Web Server (Std.Http)"
@@ -316,7 +333,7 @@ def main (args : List String) : IO UInt32 := do
   if let some d := distDir then
     IO.println s!"  Serving frontend from: {d}"
   else
-    IO.println s!"  Frontend dist not found (API mode only)"
+    IO.println s!"  Frontend dist not found (Redirecting to dev server: {fPort})"
   IO.println s!"====================================================="
 
   try

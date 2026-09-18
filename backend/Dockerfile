@@ -21,15 +21,13 @@ RUN curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init
     && elan default $(cat lean-toolchain)
 
 # 프로젝트 소스 복사
-COPY lakefile.lean ./
-COPY Backend.lean ./
+COPY lakefile.lean Backend.lean Main.lean ./
 COPY Backend/ ./Backend/
-COPY Main.lean ./
 
-# 초기 바이너리 빌드
-RUN lake build
+# 사전 빌드 완료 후 시스템 바이너리 디렉토리에 보존
+RUN lake build && cp ./.lake/build/bin/backend /usr/local/bin/lean4-backend
 
 EXPOSE 8080
 
-# 컨테이너 실행 시 lake build(볼륨 변경사항 반영) 후 백엔드 실행
-CMD ["sh", "-c", "lake build && ./.lake/build/bin/backend ${BACKEND_PORT:-8080}"]
+# 시작 시 사전 빌드된 바이너리로 즉시 포트 오픈 (빌드 대기시간 제거)
+CMD ["sh", "-c", "if [ -f ./.lake/build/bin/backend ]; then ./.lake/build/bin/backend ${BACKEND_PORT:-8080}; else /usr/local/bin/lean4-backend ${BACKEND_PORT:-8080}; fi"]

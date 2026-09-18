@@ -6,25 +6,24 @@ services:
     container_name: lean4-web-backend
     restart: unless-stopped
     ports:
-      # 호스트 80 포트를 백엔드로 바인딩하여 http://localhost 접속 시 홈페이지 연결
-      - "80:${BACKEND_PORT:-8080}"
+      # 호스트 80 포트를 백엔드로 매핑 (기본값: 80 -> 백엔드 포트)
+      - "${HOST_HTTP_PORT:-80}:${BACKEND_PORT:-8080}"
       - "${BACKEND_PORT:-8080}:${BACKEND_PORT:-8080}"
     environment:
       - BACKEND_PORT=${BACKEND_PORT:-8080}
+      - FRONTEND_PORT=${FRONTEND_PORT:-5173}
       - PORT=${BACKEND_PORT:-8080}
     volumes:
       # 호스트 백엔드 소스 코드 실시간 반영
       - ./backend:/app/backend
-      # 프론트엔드 빌드 산출물 공유 (80 포트 홈페이지 서빙)
+      # 프론트엔드 빌드 산출물 공유 (홈페이지 정적 서빙)
       - ./frontend/dist:/app/frontend/dist:ro
-      # 호스트 OS(macOS/Windows)와 컨테이너(Linux) 간 빌드 산출물 충돌 방지 및 Lake 빌드 캐시 영속화
+      # 호스트와 컨테이너 간 빌드 캐시 격리
       - backend_lake_cache:/app/backend/.lake
-      # Lean elan 툴체인 캐시 볼륨
+      # Lean elan 툴체인 캐시
       - backend_elan_cache:/root/.elan
       # 루트 .env 설정 공유
       - ./.env:/app/.env:ro
-    command: >
-      sh -c "lake build && ./.lake/build/bin/backend ${BACKEND_PORT:-8080}"
     networks:
       - lean4-net
 
