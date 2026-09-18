@@ -171,8 +171,19 @@ instance : Handler AppHandler where
     | _, _ =>
       errorResponse s!"Route not found: {method} {path}" .notFound
 
-def main : IO Unit := do
-  let port : UInt16 := 8080
+def parsePort (args : List String) : IO UInt16 := do
+  if let some pStr := args.head? then
+    if let some p := pStr.toNat? then
+      if p > 0 ∧ p < 65536 then
+        return p.toUInt16
+  if let some envPort ← IO.getEnv "PORT" then
+    if let some p := envPort.toNat? then
+      if p > 0 ∧ p < 65536 then
+        return p.toUInt16
+  return 8080
+
+def main (args : List String) : IO UInt32 := do
+  let port ← parsePort args
   let store ← TodoStore.create
   let handler : AppHandler := { todoStore := store }
 
@@ -181,7 +192,17 @@ def main : IO Unit := do
   IO.println s!"  Listening on http://127.0.0.1:{port}"
   IO.println s!"====================================================="
 
-  Async.block do
-    let addr : Net.SocketAddress := .v4 ⟨.ofParts 127 0 0 1, port⟩
-    let server ← Server.serve addr handler
-    server.waitShutdown
+  try
+    Async.block do
+      let addr : Net.SocketAddress := .v4 ⟨.ofParts 127 0 0 1, port⟩
+      let server ← Server.serve addr handler
+      server.waitShutdown
+    return 0
+  catch e =>
+    IO.eprintln s!"\n[오류] 서버 시작 실패: {e}"
+    IO.eprintln s!"포트 {port}번이 이미 다른 프로세스에 의해 점유되어 있습니다."
+    IO.eprintln s!"  1) 기존 점유 프로세스 확인 및 종료 (macOS/Linux):"
+    IO.eprintln s!"     lsof -t -i :{port} | xargs kill -9"
+    IO.eprintln s!"  2) 또는 다른 포트로 실행:"
+    IO.eprintln s!"     lake exe backend 8081  (또는 PORT=8081 lake exe backend)\n"
+    return 1

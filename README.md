@@ -72,12 +72,20 @@ flowchart LR
 # 백엔드 디렉토리로 이동
 cd backend
 
-# 빌드 및 실행
+# 빌드 및 실행 (기본 포트: 8080)
 lake build
 lake exe backend
-# 또는 ./.lake/build/bin/backend
+
+# 다른 포트로 실행하고 싶을 때 (예: 8081)
+lake exe backend 8081
+# 또는 PORT=8081 lake exe backend
 ```
-서버가 `http://127.0.0.1:8080`에서 시작됩니다.
+서버가 `http://127.0.0.1:8080` (또는 지정한 포트)에서 시작됩니다.
+
+> [!TIP]
+> 만약 `resource busy (error code: 48, address already in use)` 오류가 발생하는 경우:
+> 1. 이미 8080 포트를 점유하고 있는 프로세스를 종료: `lsof -t -i :8080 | xargs kill -9`
+> 2. 또는 다른 포트로 백엔드 실행: `lake exe backend 8081` 및 프론트엔드 실행: `BACKEND_PORT=8081 npm run dev`
 
 ### 2. 프론트엔드 실행 (React + Vite + TS)
 ```bash
