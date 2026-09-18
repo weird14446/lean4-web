@@ -1,0 +1,16 @@
+{
+  "name": "lean4-web",
+  "version": "0.1.0",
+  "description": "Full-stack web application with Lean 4 HTTP backend and React-Vite TypeScript frontend",
+  "scripts": {
+    "build:backend": "cd backend && lake build",
+    "start:backend": "cd backend && ./.lake/build/bin/backend",
+    "dev:backend": "cd backend && lake exe backend",
+    "build:frontend": "cd frontend && npm run build",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend"
+  },
+  "keywords": ["lean4", "react", "vite", "typescript", "http", "theorem-prover"],
+  "author": "",
+  "license": "Apache-2.0"
+}

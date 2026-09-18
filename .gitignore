@@ -1,2 +1,17 @@
-# cache and other artifacts produced by Lean's Lake build tool
+# Lake build artifacts
 .lake/
+**/lake-manifest.json
+**/lakefile.olean
+**/.lake/
+
+# Node & Frontend build artifacts
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+*.local
+
+# Editor and OS
+.DS_Store
+*.swp
+*~
