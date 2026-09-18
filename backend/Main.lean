@@ -246,12 +246,12 @@ def main (args : List String) : IO UInt32 := do
 
   IO.println s!"====================================================="
   IO.println s!"  Lean 4 HTTP Web Server (Std.Http)"
-  IO.println s!"  Listening on http://127.0.0.1:{port}"
+  IO.println s!"  Listening on http://0.0.0.0:{port} (http://localhost:{port})"
   IO.println s!"====================================================="
 
   try
     Async.block do
-      let addr : Net.SocketAddress := .v4 ⟨.ofParts 127 0 0 1, port⟩
+      let addr : Net.SocketAddress := .v4 ⟨.ofParts 0 0 0 0, port⟩
       let server ← Server.serve addr handler
       server.waitShutdown
     return 0

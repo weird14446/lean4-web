@@ -10,14 +10,16 @@ export default defineConfig(({ mode }) => {
 
   const frontendPort = parseInt(env.FRONTEND_PORT || '5173', 10)
   const backendPort = env.BACKEND_PORT || '8080'
+  const backendHost = env.BACKEND_HOST || '127.0.0.1'
 
   return {
     plugins: [react()],
     server: {
+      host: '0.0.0.0', // Docker 컨테이너 및 로컬 외부 바인딩
       port: frontendPort,
       proxy: {
         '/api': {
-          target: `http://127.0.0.1:${backendPort}`,
+          target: `http://${backendHost}:${backendPort}`,
           changeOrigin: true,
         },
       },

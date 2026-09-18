@@ -8,9 +8,12 @@
     "dev:backend": "cd backend && lake exe backend",
     "build:frontend": "cd frontend && npm run build",
     "dev:frontend": "cd frontend && npm run dev",
-    "build": "npm run build:backend && npm run build:frontend"
+    "build": "npm run build:backend && npm run build:frontend",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
   },
-  "keywords": ["lean4", "react", "vite", "typescript", "http", "theorem-prover"],
+  "keywords": ["lean4", "react", "vite", "typescript", "http", "theorem-prover", "docker"],
   "author": "",
   "license": "Apache-2.0"
 }

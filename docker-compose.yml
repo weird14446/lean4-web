@@ -1,0 +1,61 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lean4-web-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8080}:${BACKEND_PORT:-8080}"
+    environment:
+      - BACKEND_PORT=${BACKEND_PORT:-8080}
+      - PORT=${BACKEND_PORT:-8080}
+    volumes:
+      # 호스트 백엔드 소스 코드 실시간 반영
+      - ./backend:/app/backend
+      # 호스트 OS(macOS/Windows)와 컨테이너(Linux) 간 빌드 산출물 충돌 방지 및 Lake 빌드 캐시 영속화
+      - backend_lake_cache:/app/backend/.lake
+      # Lean elan 툴체인 캐시 볼륨
+      - backend_elan_cache:/root/.elan
+      # 루트 .env 설정 공유
+      - ./.env:/app/.env:ro
+    command: >
+      sh -c "lake build && ./.lake/build/bin/backend ${BACKEND_PORT:-8080}"
+    networks:
+      - lean4-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lean4-web-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}"
+    environment:
+      - FRONTEND_PORT=${FRONTEND_PORT:-5173}
+      - BACKEND_PORT=${BACKEND_PORT:-8080}
+      - BACKEND_HOST=backend
+    volumes:
+      # 호스트 프론트엔드 소스 코드 실시간 반영 (Vite HMR 활성화)
+      - ./frontend:/app/frontend
+      # 호스트와 컨테이너 간 node_modules 충돌 방지 및 캐싱
+      - frontend_node_modules:/app/frontend/node_modules
+      # 루트 .env 설정 공유
+      - ./.env:/app/.env:ro
+    depends_on:
+      - backend
+    networks:
+      - lean4-net
+
+networks:
+  lean4-net:
+    driver: bridge
+
+volumes:
+  backend_lake_cache:
+    name: lean4_backend_lake_cache
+  backend_elan_cache:
+    name: lean4_backend_elan_cache
+  frontend_node_modules:
+    name: lean4_frontend_node_modules

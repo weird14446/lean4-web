@@ -83,7 +83,38 @@ FRONTEND_PORT=5173
 > - 포트 8080이 이미 사용 중이라면 `.env` 파일에서 `BACKEND_PORT=8081` 등으로 변경하기만 하면 백엔드와 프론트엔드(프록시)에 모두 즉시 자동 반영됩니다.
 > - 커맨드라인 인자로 직접 지정할 수도 있습니다: `lake exe backend 8081`
 
-### 1. 백엔드 실행 (Lean 4)
+### 🐳 Docker로 한 번에 실행하기 (추천)
+
+Docker와 Docker Compose가 설치되어 있다면 단 한 줄로 전체 스택을 실행할 수 있습니다:
+
+```bash
+# 빌드 및 실행 (포트는 .env 설정 자동 반영)
+docker compose up --build
+
+# 백그라운드 실행 시
+docker compose up --build -d
+
+# 실행 중지
+docker compose down
+```
+
+> **📦 볼륨(Volume) 활용 전략**:
+> 1. **소스 코드 실시간 반영 (핫 리로드)**:
+>    - `./backend:/app/backend` 및 `./frontend:/app/frontend` 바인드 마운트를 통해 코드 수정 시 즉시 반영됩니다 (프론트엔드 Vite HMR 지원).
+> 2. **Lake 빌드 캐시 격리 (`backend_lake_cache`)**:
+>    - 호스트 OS(macOS ARM64, Windows 등)와 컨테이너(Linux) 간의 빌드 산출물 충돌을 방지하고 컨테이너 전용 Lake 캐시를 영속화하여 빌드 속도를 극대화합니다.
+> 3. **elan 툴체인 캐시 (`backend_elan_cache`)**:
+>    - Lean 4 컴파일러 툴체인을 볼륨에 캐싱하여 컨테이너 재시작/재빌드 시 매번 다운로드하지 않습니다.
+> 4. **`node_modules` 격리 (`frontend_node_modules`)**:
+>    - 호스트와 컨테이너 간 Node 패키지 충돌을 방지합니다.
+> 5. **`.env` 환경설정 공유 (`./.env:/app/.env:ro`)**:
+>    - 호스트의 `.env`에 설정한 포트가 컨테이너 내부 및 호스트 포트 포워딩에 100% 자동 동기화됩니다.
+
+---
+
+### 💻 로컬에서 직접 실행하기
+
+#### 1. 백엔드 실행 (Lean 4)
 ```bash
 # 백엔드 디렉토리로 이동
 cd backend
@@ -94,7 +125,7 @@ lake exe backend
 ```
 서버가 `http://127.0.0.1:8080` (또는 `.env`에 설정된 포트)에서 시작됩니다.
 
-### 2. 프론트엔드 실행 (React + Vite + TS)
+#### 2. 프론트엔드 실행 (React + Vite + TS)
 ```bash
 # 별도 터미널에서 프론트엔드 디렉토리로 이동
 cd frontend
