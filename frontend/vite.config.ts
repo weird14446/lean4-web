@@ -15,7 +15,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      host: '0.0.0.0', // Docker 컨테이너 및 로컬 외부 바인딩
+      host: '0.0.0.0',
+      allowedHosts: true, // Docker 컨테이너 및 로컬 외부 바인딩
       port: frontendPort,
       proxy: {
         '/api': {
