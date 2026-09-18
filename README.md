@@ -59,6 +59,10 @@ flowchart LR
 5. **인터랙티브 API 테스터**:
    - 프론트엔드 내에서 백엔드 REST API를 즉시 호출하고 실시간 JSON 응답 확인
 
+6. **80 포트 홈페이지 직접 서빙 (풀스택 단일 포트 서비스)**:
+   - Lean 4 백엔드가 빌드된 React SPA 정적 파일(`index.html`, JS, CSS, SVG 등)을 직접 서빙
+   - `http://localhost` (80 포트)로 접속 시 홈페이지로 즉시 연결되며, `/api` 요청은 내장 REST API로 처리됩니다.
+
 ---
 
 ## 🛠 실행 방법
@@ -97,6 +101,10 @@ docker compose up --build -d
 # 실행 중지
 docker compose down
 ```
+
+> **🌐 브라우저 접속**:
+> - 실행 후 웹 브라우저에서 **`http://localhost`** (80번 기본 포트)로 접속하시면 Lean 4 백엔드가 직접 서빙하는 홈페이지에 바로 연결됩니다!
+> - 개발 서버 프론트엔드 직접 접속: `http://localhost:5173` (Vite HMR 개발용)
 
 > **📦 볼륨(Volume) 활용 전략**:
 > 1. **소스 코드 실시간 반영 (핫 리로드)**:
