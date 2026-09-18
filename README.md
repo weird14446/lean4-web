@@ -67,25 +67,32 @@ flowchart LR
 - **Lean 4** (elan v4.34.0 권장)
 - **Node.js** (v18+) 및 **npm**
 
+### ⚙️ 포트 환경설정 (.env)
+
+프로젝트 루트의 `.env` 파일을 통해 백엔드와 프론트엔드의 포트를 자유롭게 변경할 수 있습니다:
+
+```env
+# 백엔드 서버 포트 (Lean 4 Std.Http)
+BACKEND_PORT=8080
+
+# 프론트엔드 개발 서버 포트 (React-Vite)
+FRONTEND_PORT=5173
+```
+
+> [!TIP]
+> - 포트 8080이 이미 사용 중이라면 `.env` 파일에서 `BACKEND_PORT=8081` 등으로 변경하기만 하면 백엔드와 프론트엔드(프록시)에 모두 즉시 자동 반영됩니다.
+> - 커맨드라인 인자로 직접 지정할 수도 있습니다: `lake exe backend 8081`
+
 ### 1. 백엔드 실행 (Lean 4)
 ```bash
 # 백엔드 디렉토리로 이동
 cd backend
 
-# 빌드 및 실행 (기본 포트: 8080)
+# 빌드 및 실행 (.env의 BACKEND_PORT 적용)
 lake build
 lake exe backend
-
-# 다른 포트로 실행하고 싶을 때 (예: 8081)
-lake exe backend 8081
-# 또는 PORT=8081 lake exe backend
 ```
-서버가 `http://127.0.0.1:8080` (또는 지정한 포트)에서 시작됩니다.
-
-> [!TIP]
-> 만약 `resource busy (error code: 48, address already in use)` 오류가 발생하는 경우:
-> 1. 이미 8080 포트를 점유하고 있는 프로세스를 종료: `lsof -t -i :8080 | xargs kill -9`
-> 2. 또는 다른 포트로 백엔드 실행: `lake exe backend 8081` 및 프론트엔드 실행: `BACKEND_PORT=8081 npm run dev`
+서버가 `http://127.0.0.1:8080` (또는 `.env`에 설정된 포트)에서 시작됩니다.
 
 ### 2. 프론트엔드 실행 (React + Vite + TS)
 ```bash
@@ -95,10 +102,10 @@ cd frontend
 # 의존성 설치 (최초 1회)
 npm install
 
-# 개발 서버 시작
+# 개발 서버 시작 (.env의 FRONTEND_PORT 적용)
 npm run dev
 ```
-브라우저에서 `http://localhost:5173`으로 접속합니다.
+브라우저에서 `http://localhost:5173` (또는 `.env`에 설정된 포트)로 접속합니다. 프론트엔드는 `.env`의 `BACKEND_PORT`로 API 요청을 자동 프록시합니다.
 
 ---
 

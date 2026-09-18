@@ -171,15 +171,72 @@ instance : Handler AppHandler where
     | _, _ =>
       errorResponse s!"Route not found: {method} {path}" .notFound
 
+def stripQuotes (s : String) : String :=
+  let s := s.trimAscii.toString
+  if (s.startsWith "\"" && s.endsWith "\"") || (s.startsWith "'" && s.endsWith "'") then
+    if s.length >= 2 then
+      (s.toSlice.drop 1 |>.dropEnd 1).toString
+    else
+      s
+  else
+    s
+
+def parseEnvFile (content : String) : List (String × String) :=
+  let lines := content.splitOn "\n"
+  lines.filterMap fun line =>
+    let trimmed := line.trimAscii.toString
+    if trimmed.isEmpty || trimmed.startsWith "#" then
+      none
+    else
+      match trimmed.splitOn "=" with
+      | k :: rest =>
+        let key := k.trimAscii.toString
+        let valRaw := (String.intercalate "=" rest).trimAscii.toString
+        let val := stripQuotes valRaw
+        some (key, val)
+      | _ => none
+
+def readEnvFile : IO (List (String × String)) := do
+  let p1 : System.FilePath := ".env"
+  let p2 : System.FilePath := "../.env"
+  if ← p1.pathExists then
+    let content ← IO.FS.readFile p1
+    return parseEnvFile content
+  else if ← p2.pathExists then
+    let content ← IO.FS.readFile p2
+    return parseEnvFile content
+  else
+    return []
+
 def parsePort (args : List String) : IO UInt16 := do
+  -- 1) 커맨드라인 인자 (예: lake exe backend 8085)
   if let some pStr := args.head? then
     if let some p := pStr.toNat? then
+      if p > 0 ∧ p < 65536 then
+        return p.toUInt16
+
+  -- 2) 시스템 환경 변수 (BACKEND_PORT 또는 PORT)
+  if let some envPort ← IO.getEnv "BACKEND_PORT" then
+    if let some p := envPort.toNat? then
       if p > 0 ∧ p < 65536 then
         return p.toUInt16
   if let some envPort ← IO.getEnv "PORT" then
     if let some p := envPort.toNat? then
       if p > 0 ∧ p < 65536 then
         return p.toUInt16
+
+  -- 3) .env 파일 (BACKEND_PORT 또는 PORT)
+  let dotEnv ← readEnvFile
+  if let some pStr := dotEnv.lookup "BACKEND_PORT" then
+    if let some p := pStr.toNat? then
+      if p > 0 ∧ p < 65536 then
+        return p.toUInt16
+  if let some pStr := dotEnv.lookup "PORT" then
+    if let some p := pStr.toNat? then
+      if p > 0 ∧ p < 65536 then
+        return p.toUInt16
+
+  -- 4) 기본값
   return 8080
 
 def main (args : List String) : IO UInt32 := do
@@ -203,6 +260,7 @@ def main (args : List String) : IO UInt32 := do
     IO.eprintln s!"포트 {port}번이 이미 다른 프로세스에 의해 점유되어 있습니다."
     IO.eprintln s!"  1) 기존 점유 프로세스 확인 및 종료 (macOS/Linux):"
     IO.eprintln s!"     lsof -t -i :{port} | xargs kill -9"
-    IO.eprintln s!"  2) 또는 다른 포트로 실행:"
-    IO.eprintln s!"     lake exe backend 8081  (또는 PORT=8081 lake exe backend)\n"
+    IO.eprintln s!"  2) .env 파일에서 포트 수정 (예: BACKEND_PORT=8085)"
+    IO.eprintln s!"  3) 또는 다른 포트로 직접 실행:"
+    IO.eprintln s!"     lake exe backend 8085  (또는 BACKEND_PORT=8085 lake exe backend)\n"
     return 1

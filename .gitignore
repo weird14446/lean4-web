@@ -11,6 +11,11 @@ dist/
 **/dist/
 *.local
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
 # Editor and OS
 .DS_Store
 *.swp
